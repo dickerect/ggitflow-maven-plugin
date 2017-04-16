@@ -55,6 +55,13 @@ public class ReleaseStartMojo extends AbstractReleaseMojo {
     private boolean updateDependencies;
 
     /**
+     * The version to set in the develop branch.  If not specified, the version is determined by either
+     * prompting (is interactive is true) or calculated by incrementing the last digit in the current version.
+     */
+    @Parameter(property = "developmentVersion", required = false)
+    protected String developmentVersion;
+
+    /**
      * If <code>updateDependencies</code> is set, then this should contain a
      * comma separated list of artifact patterns to include. Follows the pattern <code>groupId:artifactId:type:classifier:version<code>
      *
@@ -84,13 +91,6 @@ public class ReleaseStartMojo extends AbstractReleaseMojo {
 
         /* Get next development version */
         String nextDevelopVersion = getNextDevelopVersion(developVersion);
-        if (session.getRequest().isInteractiveMode()) {
-            try {
-                nextDevelopVersion = prompter.promptWithDefault("Please enter the next development version? ", nextDevelopVersion);
-            } catch (IOException ex) {
-                exceptionMapper.handle(new MojoExecutionException("Error reading next development version from command line " + ex.getMessage(), ex));
-            }
-        }
         GenericArtifactVersion nextDevelopArtifactVersion = new GenericArtifactVersion(developVersion);
         getLog().debug("Next development version = " + nextDevelopArtifactVersion);
 
@@ -173,7 +173,24 @@ public class ReleaseStartMojo extends AbstractReleaseMojo {
         setVersion(releaseArtifactVersion.setBuildSpecifier(SNAPSHOT_QUALIFIER).toString(), releaseBranch, true);
     }
 
-    private String getNextDevelopVersion(String developVersion) {
+    protected String getNextDevelopVersion(String developVersion) throws MojoExecutionException {
+        String nextDevelopVersion = null;
+        if (developmentVersion==null) {
+            nextDevelopVersion = computeNextVersion(developVersion);
+            if (session.getRequest().isInteractiveMode()) {
+                try {
+                    nextDevelopVersion = prompter.promptWithDefault("Please enter the next development version? ", nextDevelopVersion);
+                } catch (IOException ex) {
+                    exceptionMapper.handle(new MojoExecutionException("Error reading next development version from command line " + ex.getMessage(), ex));
+                }
+            }
+        } else {
+            nextDevelopVersion = developmentVersion;
+        }
+        return nextDevelopVersion;
+    }
+
+    private String computeNextVersion(String developVersion) {
         GenericArtifactVersion artifactVersion = new GenericArtifactVersion(developVersion);
         artifactVersion.upgradeLeastSignificantPrimaryNumber();
 
