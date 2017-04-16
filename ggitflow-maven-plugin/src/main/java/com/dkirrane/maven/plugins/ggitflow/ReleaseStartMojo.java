@@ -56,7 +56,7 @@ public class ReleaseStartMojo extends AbstractReleaseMojo {
 
     /**
      * The version to set in the develop branch.  If not specified, the version is determined by either
-     * prompting (is interactive is true) or calculated by incrementing the last digit in the current version.
+     * prompting (if interactive is true) or calculated by incrementing the last digit in the current version.
      */
     @Parameter(property = "developmentVersion", required = false)
     protected String developmentVersion;
